@@ -70,26 +70,42 @@ const port = process.env.PORT || 9090;
 app.use(express.static(path.join(__dirname, 'public')));
 
 
+const zlib = require('zlib');
 
 async function authentification() {
     try {
-       
-        //console.log("le data "+data)
         if (!fs.existsSync(__dirname + "/auth/creds.json")) {
-            console.log("connexion en cour ...");
-            await fs.writeFileSync(__dirname + "/auth/creds.json", atob(session), "utf8");
-            //console.log(session)
+            console.log("Session connected...");
+            // Split the session string into header and Base64 data
+            const [header, b64data] = conf.session.split(';;;'); 
+
+            // Validate the session format
+            if (header === "ALPHA" && b64data) {
+                let compressedData = Buffer.from(b64data.replace('...', ''), 'base64'); // Decode and truncate
+                let decompressedData = zlib.gunzipSync(compressedData); // Decompress session
+                fs.writeFileSync(__dirname + "/auth/creds.json", decompressedData, "utf8"); // Save to file
+            } else {
+                throw new Error("Invalid session format");
+            }
+        } else if (fs.existsSync(__dirname + "/auth/creds.json") && conf.session !== "zokk") {
+            console.log("Updating existing session...");
+            const [header, b64data] = conf.session.split(';;;'); 
+
+            if (header === "ALPHA" && b64data) {
+                let compressedData = Buffer.from(b64data.replace('...', ''), 'base64');
+                let decompressedData = zlib.gunzipSync(compressedData);
+                fs.writeFileSync(__dirname + "/auth/creds.json", decompressedData, "utf8");
+            } else {
+                throw new Error("Invalid session format");
+            }
         }
-        else if (fs.existsSync(__dirname + "/auth/creds.json") && session != "zokk") {
-            await fs.writeFileSync(__dirname + "/auth/creds.json", atob(session), "utf8");
-        }
-    }
-    catch (e) {
-        console.log("Session Invalide " + e);
+    } catch (e) {
+        console.log("Session Invalid: " + e.message);
         return;
     }
 }
 authentification();
+
 const store = (0, baileys_1.makeInMemoryStore)({
     logger: pino().child({ level: "silent", stream: "store" }),
 });
