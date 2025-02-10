@@ -367,7 +367,7 @@ keith({
         `https://api.heroku.com/apps/${herokuAppName}/builds`,
         {
           source_blob: {
-            url: "https://github.com/Keithkeizzah/ALPHA-MD/tarball/main",
+            url: "https://github.com/kkeizzah/ALPHA-MD/tarball/main",
           },
         },
         {
